@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { authErrorMessage } from "@/lib/auth-error-message";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -26,12 +27,13 @@ export default function SignUpPage() {
       const { error } = await authClient.signUp.email({ email, password, name });
       if (error) {
         console.error("Better Auth email sign-up failed", error);
-        setFormError("অ্যাকাউন্ট তৈরি করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।");
+        setFormError(authErrorMessage(error, "sign-up"));
         return;
       }
 
-      toast.success("অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!");
-      router.push("/signin");
+      toast.success("অ্যাকাউন্ট তৈরি হয়েছে। আপনি এখন সাইন ইন করেছেন!");
+      router.replace("/");
+      router.refresh();
     } catch (error) {
       console.error("Better Auth email sign-up request failed", error);
       setFormError("নিবন্ধন সেবা এখন পাওয়া যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।");
@@ -79,6 +81,7 @@ export default function SignUpPage() {
                 placeholder="সম্পূর্ণ নাম লিখুন" 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                autoComplete="name"
                 className="input input-bordered w-full focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 bg-white" 
                 required 
               />
@@ -93,6 +96,7 @@ export default function SignUpPage() {
                 placeholder="আপনার ইমেইল দিন" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 className="input input-bordered w-full focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 bg-white" 
                 required 
               />
@@ -107,10 +111,13 @@ export default function SignUpPage() {
                 placeholder="পাসওয়ার্ড লিখুন" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="new-password"
                 className="input input-bordered w-full focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 bg-white" 
                 required 
-                minLength={6}
+                minLength={8}
+                maxLength={128}
               />
+              <p className="mt-1 text-xs text-gray-500">পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।</p>
             </div>
 
             {formError && (

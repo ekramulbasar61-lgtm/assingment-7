@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { authErrorMessage } from "@/lib/auth-error-message";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
@@ -26,7 +27,7 @@ export default function SignInPage() {
       const { error } = await authClient.signIn.email({ email, password });
       if (error) {
         console.error("Better Auth email sign-in failed", error);
-        setFormError("লগইন করা যায়নি। ইমেইল ও পাসওয়ার্ড যাচাই করে আবার চেষ্টা করুন।");
+        setFormError(authErrorMessage(error, "sign-in"));
         return;
       }
 
@@ -80,6 +81,7 @@ export default function SignInPage() {
                 placeholder="আপনার ইমেইল দিন" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 className="input input-bordered w-full focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 bg-white" 
                 required 
               />
@@ -94,12 +96,10 @@ export default function SignInPage() {
                 placeholder="আপনার পাসওয়ার্ড দিন" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
                 className="input input-bordered w-full focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 bg-white" 
                 required 
               />
-              <label className="label justify-end">
-                <a href="#" className="label-text-alt link link-hover text-green-600">পাসওয়ার্ড ভুলে গেছেন?</a>
-              </label>
             </div>
 
             {formError && (
