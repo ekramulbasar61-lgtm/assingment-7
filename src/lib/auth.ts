@@ -5,8 +5,9 @@ import { Pool } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL;
 const isProduction = process.env.NODE_ENV === "production";
+const isProductionBuild = process.env.NEXT_PHASE === "phase-production-build";
 
-if (isProduction && !databaseUrl) {
+if (isProduction && !databaseUrl && !isProductionBuild) {
   throw new Error("Missing DATABASE_URL environment variable.");
 }
 
@@ -51,12 +52,17 @@ const database = databaseUrl
       }),
       type: "postgres" as const,
     }
-  : new Database("sqlite.db");
+  : new Database(isProductionBuild ? ":memory:" : "sqlite.db");
 
 export const auth = betterAuth({
   secret,
   baseURL: authBaseUrl,
   database,
+  advanced: {
+    database: {
+      validateSchema: !isProductionBuild,
+    },
+  },
   emailAndPassword: {
     enabled: true,
   },

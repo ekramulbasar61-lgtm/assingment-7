@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { connection } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import SignOutButton from "@/components/SignOutButton";
@@ -42,6 +43,7 @@ export default async function Navbar() {
   const categories = await getCategories();
   const products = await getProducts();
 
+  await connection();
   const session = await auth.api.getSession({
     headers: await headers(),
   });

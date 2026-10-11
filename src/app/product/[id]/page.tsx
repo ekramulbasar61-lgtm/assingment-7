@@ -48,6 +48,7 @@ async function getProduct(id: string): Promise<Product | null> {
 }
 
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
@@ -55,6 +56,7 @@ export const instant = false;
 
 export default async function ProductDetailsPage({ params }: { params: { id: string } }) {
   // Check auth
+  await connection();
   const session = await auth.api.getSession({
     headers: await headers()
   });
