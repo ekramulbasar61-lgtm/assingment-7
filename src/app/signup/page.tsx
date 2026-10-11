@@ -15,23 +15,28 @@ export default function SignUpPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [formError, setFormError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setFormError("");
     setLoading(true);
-    
-    const { error } = await authClient.signUp.email({
-      email,
-      password,
-      name,
-    });
-    
-    setLoading(false);
-    if (error) {
-      toast.error(error.message || "রেজিস্ট্রেশন ব্যর্থ হয়েছে");
-    } else {
+
+    try {
+      const { error } = await authClient.signUp.email({ email, password, name });
+      if (error) {
+        console.error("Better Auth email sign-up failed", error);
+        setFormError("অ্যাকাউন্ট তৈরি করা যায়নি। তথ্য যাচাই করে আবার চেষ্টা করুন।");
+        return;
+      }
+
       toast.success("অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে!");
       router.push("/signin");
+    } catch (error) {
+      console.error("Better Auth email sign-up request failed", error);
+      setFormError("নিবন্ধন সেবা এখন পাওয়া যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -43,13 +48,15 @@ export default function SignUpPage() {
       });
 
       if (result?.error) {
-        toast.error(result.error.message || `${provider} দিয়ে সাইন আপ ব্যর্থ হয়েছে`);
+        console.error(`Better Auth ${provider} sign-up failed`, result.error);
+        setFormError("সামাজিক মাধ্যমে নিবন্ধন করা যায়নি। আবার চেষ্টা করুন।");
         return;
       }
 
       toast.success(`${provider} দিয়ে লগইন করা হচ্ছে...`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : `${provider} দিয়ে সাইন আপ ব্যর্থ হয়েছে`);
+      console.error(`Better Auth ${provider} sign-up request failed`, error);
+      setFormError("সামাজিক মাধ্যমে নিবন্ধন সেবা এখন পাওয়া যাচ্ছে না।");
     }
   };
 
@@ -105,6 +112,12 @@ export default function SignUpPage() {
                 minLength={6}
               />
             </div>
+
+            {formError && (
+              <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
+                {formError}
+              </p>
+            )}
 
             <button type="submit" className="btn w-full bg-green-600 hover:bg-green-700 text-white border-none mt-4" disabled={loading}>
               {loading ? <span className="loading loading-spinner"></span> : 'রেজিস্টার করুন'}

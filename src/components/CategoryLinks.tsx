@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 interface CategoryItem {
-  id: number;
+  id: string | number;
   slug: string;
   nameBn: string;
   icon: string;
@@ -15,7 +15,7 @@ export default function CategoryLinks({ categories }: { categories: CategoryItem
 
   return (
     <ul className="flex items-center md:justify-center gap-4 text-sm whitespace-nowrap">
-      {categories.slice(0, 7).map((cat) => {
+      {categories.map((cat) => {
         const isActive = pathname === `/category/${cat.slug}`;
 
         return (

@@ -15,23 +15,29 @@ export default function SignInPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [formError, setFormError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setFormError("");
     setLoading(true);
-    
-    const { error } = await authClient.signIn.email({
-      email,
-      password,
-    });
-    
-    setLoading(false);
-    if (error) {
-      toast.error(error.message || "লগইন ব্যর্থ হয়েছে");
-    } else {
+
+    try {
+      const { error } = await authClient.signIn.email({ email, password });
+      if (error) {
+        console.error("Better Auth email sign-in failed", error);
+        setFormError("লগইন করা যায়নি। ইমেইল ও পাসওয়ার্ড যাচাই করে আবার চেষ্টা করুন।");
+        return;
+      }
+
       toast.success("সফলভাবে লগইন হয়েছে!");
       router.push("/");
       router.refresh();
+    } catch (error) {
+      console.error("Better Auth email sign-in request failed", error);
+      setFormError("লগইন সেবা এখন পাওয়া যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -43,13 +49,15 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        toast.error(result.error.message || `${provider} দিয়ে লগইন ব্যর্থ হয়েছে`);
+        console.error(`Better Auth ${provider} sign-in failed`, result.error);
+        setFormError("সামাজিক মাধ্যমে লগইন করা যায়নি। আবার চেষ্টা করুন।");
         return;
       }
 
       toast.success(`${provider} দিয়ে লগইন করা হচ্ছে...`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : `${provider} দিয়ে লগইন ব্যর্থ হয়েছে`);
+      console.error(`Better Auth ${provider} sign-in request failed`, error);
+      setFormError("সামাজিক মাধ্যমে লগইন সেবা এখন পাওয়া যাচ্ছে না।");
     }
   };
 
@@ -93,6 +101,12 @@ export default function SignInPage() {
                 <a href="#" className="label-text-alt link link-hover text-green-600">পাসওয়ার্ড ভুলে গেছেন?</a>
               </label>
             </div>
+
+            {formError && (
+              <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700" role="alert">
+                {formError}
+              </p>
+            )}
 
             <button type="submit" className="btn w-full bg-green-600 hover:bg-green-700 text-white border-none mt-2" disabled={loading}>
               {loading ? <span className="loading loading-spinner"></span> : 'লগইন করুন'}

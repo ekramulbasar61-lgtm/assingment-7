@@ -9,10 +9,17 @@ interface Product {
   id: number;
   slug: string;
   nameBn: string;
+  categoryNameBn: string;
+  categoryIcon: string;
   unit: string;
   today: number;
   change: ProductChange;
   image: string;
+}
+
+interface ProductChange {
+  dir: "up" | "down" | "flat";
+  pct: number;
 }
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -32,7 +39,7 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 group-hover:text-green-600 transition-colors">{product.nameBn}</h3>
-            <p className="text-xs text-gray-500">প্রতি {product.unit === 'kg' ? 'কেজি' : (product.unit === 'l' ? 'লিটার' : product.unit)}</p>
+            <p className="text-xs text-gray-500">{product.categoryIcon} {product.categoryNameBn} · প্রতি {product.unit === 'kg' ? 'কেজি' : (product.unit === 'l' || product.unit === 'liter' ? 'লিটার' : product.unit)}</p>
           </div>
         </div>
         

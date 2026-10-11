@@ -1,52 +1,28 @@
 import Link from "next/link";
 import Image from "next/image";
 import { connection } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { getAuthSession } from "@/lib/auth-session";
 import SignOutButton from "@/components/SignOutButton";
 import NavbarAvatar from "@/components/NavbarAvatar";
 import CategoryLinks from "@/components/CategoryLinks";
-import { apiUrls } from "@/lib/api";
-
-interface CategoryItem {
-  id: number;
-  slug: string;
-  nameBn: string;
-  icon: string;
-}
-
-interface ProductItem {
-  id: number;
-  categoryIcon: string;
-  nameBn: string;
-  today: number;
-  unit: string;
-  change: {
-    dir: "up" | "down" | "flat";
-    pct: number;
-  };
-}
-
-async function getCategories(): Promise<CategoryItem[]> {
-  const res = await fetch(apiUrls.categories);
-  if (!res.ok) return [];
-  return (await res.json()) as CategoryItem[];
-}
-
-async function getProducts(): Promise<ProductItem[]> {
-  const res = await fetch(apiUrls.products);
-  if (!res.ok) return [];
-  return (await res.json()) as ProductItem[];
-}
+import { getCategories, getProducts, unitLabels } from "@/lib/market-data";
 
 export default async function Navbar() {
-  const categories = await getCategories();
-  const products = await getProducts();
-
   await connection();
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+
+  const [categoryData, productData] = await Promise.all([
+    getCategories(),
+    getProducts(),
+  ]);
+
+  let session: Awaited<ReturnType<typeof getAuthSession>> = null;
+  let authUnavailable = false;
+  try {
+    session = await getAuthSession();
+  } catch (error) {
+    authUnavailable = true;
+    console.error("Unable to load the Better Auth session for the navbar", error);
+  }
 
   const today = new Date();
   const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "long", year: "numeric" };
@@ -69,7 +45,13 @@ export default async function Navbar() {
           </div>
 
           <nav className="w-full md:w-auto flex-1 overflow-x-auto no-scrollbar order-3 md:order-2">
-            <CategoryLinks categories={categories} />
+            {categoryData.error ? (
+              <p className="text-sm text-amber-800" role="alert">
+                ক্যাটাগরির তথ্য লোড করা যায়নি।
+              </p>
+            ) : (
+              <CategoryLinks categories={categoryData.items} />
+            )}
           </nav>
 
           <div className="flex items-center gap-2 order-2 md:order-3">
@@ -90,30 +72,43 @@ export default async function Navbar() {
             )}
           </div>
         </div>
+        {authUnavailable && (
+          <p className="mt-2 text-right text-xs text-amber-800" role="status">
+            সাইন ইন সুবিধা সাময়িকভাবে অনুপলব্ধ।
+          </p>
+        )}
       </div>
 
       <div className="bg-green-50 border-t border-b border-green-100 overflow-hidden py-2">
-        <div className="flex animate-[marquee_40s_linear_infinite] whitespace-nowrap">
-          {products.slice(0, 15).map((product) => (
+        <div className="flex animate-marquee whitespace-nowrap">
+          {productData.items.slice(0, 15).map((product) => (
             <div key={product.id} className="inline-flex items-center gap-2 mx-4 text-sm font-medium">
               <span>{product.categoryIcon}</span>
               <span className="text-gray-700">{product.nameBn}</span>
-              <span className="text-gray-500">{product.today} টাকা/{product.unit === "kg" ? "কেজি" : product.unit}</span>
+              <span className="text-gray-500">{product.today} টাকা/{unitLabels[product.unit] || product.unit}</span>
               {product.change.dir === "up" && <span className="text-red-500">▲ {product.change.pct}%</span>}
               {product.change.dir === "down" && <span className="text-green-600">▼ {Math.abs(product.change.pct)}%</span>}
               {product.change.dir === "flat" && <span className="text-gray-400">—</span>}
             </div>
           ))}
-          {products.slice(0, 15).map((product) => (
+          {productData.items.slice(0, 15).map((product) => (
             <div key={`${product.id}-dup`} className="inline-flex items-center gap-2 mx-4 text-sm font-medium">
               <span>{product.categoryIcon}</span>
               <span className="text-gray-700">{product.nameBn}</span>
-              <span className="text-gray-500">{product.today} টাকা/{product.unit === "kg" ? "কেজি" : product.unit}</span>
+              <span className="text-gray-500">{product.today} টাকা/{unitLabels[product.unit] || product.unit}</span>
               {product.change.dir === "up" && <span className="text-red-500">▲ {product.change.pct}%</span>}
               {product.change.dir === "down" && <span className="text-green-600">▼ {Math.abs(product.change.pct)}%</span>}
               {product.change.dir === "flat" && <span className="text-gray-400">—</span>}
             </div>
           ))}
+          {productData.error && (
+            <p className="mx-4 text-sm text-amber-800" role="alert">
+              পণ্যের তথ্য লোড করা যায়নি।
+            </p>
+          )}
+          {!productData.error && productData.items.length === 0 && (
+            <p className="mx-4 text-sm text-gray-600">বর্তমানে পণ্যের তথ্য নেই।</p>
+          )}
         </div>
       </div>
     </header>

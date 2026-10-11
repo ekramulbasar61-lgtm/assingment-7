@@ -1,9 +1,6 @@
-const apiBaseUrl = process.env.API_BASE_URL;
-
-if (!apiBaseUrl) {
-  throw new Error("Missing API_BASE_URL environment variable.");
-}
-
+const apiBaseUrl =
+  process.env.API_BASE_URL?.trim() ||
+  "https://openapi.programming-hero.com/api/bazardor";
 const normalizedApiBaseUrl = apiBaseUrl.replace(/\/+$/, "");
 
 export const apiUrls = {

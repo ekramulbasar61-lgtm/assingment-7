@@ -2,6 +2,7 @@ export default function Loading() {
   return (
     <div className="container mx-auto max-w-6xl px-4 py-12">
       <div className="flex flex-col gap-8">
+        <p className="sr-only" role="status">পৃষ্ঠাটি লোড হচ্ছে…</p>
         <div className="h-64 bg-gray-200 rounded-3xl animate-pulse"></div>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">

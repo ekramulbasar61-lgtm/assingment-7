@@ -1,17 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
 import Link from "next/link";
+import { useProfileImage } from "@/lib/profile-image";
 
 export default function NavbarAvatar({ name }: { name: string }) {
-  const [profileImage] = useState<string | null>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-
-    return window.localStorage.getItem("profileImage") ?? null;
-  });
+  const profileImage = useProfileImage();
 
   return (
     <Link href="/profile" className="flex items-center gap-2 mr-2 group">

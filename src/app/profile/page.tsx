@@ -5,19 +5,14 @@ import { authClient } from "@/lib/auth-client";
 import { useState, useRef } from "react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { saveProfileImage, useProfileImage } from "@/lib/profile-image";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { data: session, isPending } = authClient.useSession();
   const [name, setName] = useState(() => session?.user?.name ?? "");
   const [loading, setLoading] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(() => {
-    if (typeof window === "undefined") {
-      return null;
-    }
-
-    return window.localStorage.getItem("profileImage") ?? null;
-  });
+  const profileImage = useProfileImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpdate = async () => {
@@ -48,8 +43,7 @@ export default function ProfilePage() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64String = reader.result as string;
-        setProfileImage(base64String);
-        localStorage.setItem('profileImage', base64String);
+        saveProfileImage(base64String);
         toast.success("ছবি সফলভাবে আপলোড হয়েছে!");
       };
       reader.readAsDataURL(file);

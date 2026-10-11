@@ -28,14 +28,14 @@
    ```bash
    npm install
    ```
-3. Copy `.env.example` to `.env.local` and set the API URL:
+3. Copy `.env.example` to `.env.local`. The market API URL has a built-in default; set this optional override only to use a different compatible API:
    ```env
-   API_BASE_URL=https://openapi.programming-hero.com/api/bazardor
+   # API_BASE_URL=https://openapi.programming-hero.com/api/bazardor
    ```
    Local development uses `sqlite.db` and a local-only auth secret by default. To use PostgreSQL locally, set `DATABASE_URL` and `BETTER_AUTH_SECRET`; generate the secret with `openssl rand -base64 32` and use a Neon pooled connection string with `sslmode=verify-full`.
 4. Create the BetterAuth tables in the selected database if they do not already exist:
    ```bash
-   npx @better-auth/cli migrate
+   npx auth migrate --config src/lib/auth.ts
    ```
    This creates the schema in the selected database; it does not import accounts between SQLite and PostgreSQL.
 5. Start the development server:
@@ -49,14 +49,14 @@
 1. Push this repository to GitHub and import it in Vercel. Vercel should detect Next.js automatically; keep the default build command (`npm run build`) and output settings.
 2. Create a Neon PostgreSQL database, either through the Vercel Marketplace or Neon, and copy its pooled connection string.
 3. Add these environment variables in **Vercel → Project → Settings → Environment Variables**:
-   - `API_BASE_URL`: `https://openapi.programming-hero.com/api/bazardor`
    - `DATABASE_URL`: the Neon pooled PostgreSQL connection string (use `sslmode=verify-full`)
    - `BETTER_AUTH_SECRET`: a unique value generated with `openssl rand -base64 32`
    - `BETTER_AUTH_URL`: your production origin, such as `https://your-project.vercel.app`
+   - `API_BASE_URL` (optional): `https://openapi.programming-hero.com/api/bazardor` is the default
    - Optional OAuth: set `NEXT_PUBLIC_GOOGLE_CLIENT_ID` with `GOOGLE_CLIENT_SECRET`, and/or `NEXT_PUBLIC_GITHUB_CLIENT_ID` with `GITHUB_CLIENT_SECRET`. Configure each provider's callback URL as `https://your-domain/api/auth/callback/google` or `https://your-domain/api/auth/callback/github`.
 
-   Add the database URL, secret, and API URL to each Vercel environment you deploy. Production requires PostgreSQL and a secret; it never falls back to local SQLite. Set `BETTER_AUTH_URL` to the canonical origin in Production; for Preview, leave it unset so the app uses Vercel's per-deployment `VERCEL_URL`. If enabling OAuth on previews, also register their exact callback URLs with each provider.
-4. Before the first deployment, run `npx @better-auth/cli migrate` with `DATABASE_URL` set to the Neon database. Do not use a local SQLite database URL.
+   Add the database URL and secret to each Vercel environment you deploy. Production requires PostgreSQL and a secret; it never falls back to local SQLite. The API URL is optional unless you are overriding the default. Set `BETTER_AUTH_URL` to the canonical origin in Production; for Preview, leave it unset so the app uses Vercel's per-deployment `VERCEL_URL`. If enabling OAuth on previews, also register their exact callback URLs with each provider.
+4. Before the first deployment, run `npx auth migrate --config src/lib/auth.ts` with `DATABASE_URL` set to the Neon database. Do not use a local SQLite database URL.
 5. Deploy from Vercel. Authentication data is stored in Neon and will persist across serverless invocations.
 
 The local `sqlite.db` file is ignored by Git and is not deployed to Vercel. Accounts in SQLite are not automatically copied to Neon.

@@ -1,80 +1,37 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { apiUrls } from "@/lib/api";
-
-// Define TypeScript interfaces for our product data
-interface Market {
-  market: string;
-  division: string;
-  min: number;
-  max: number;
-}
-
-interface Product {
-  id: number;
-  slug: string;
-  nameBn: string;
-  category: string;
-  categoryNameBn: string;
-  categoryIcon: string;
-  unit: string;
-  image: string;
-  today: number;
-  yesterday: number;
-  lastWeek: number;
-  lastMonth: number;
-  change: {
-    dir: string;
-    pct: number;
-  };
-  markets: Market[];
-}
-
-// Map english units to bengali
-const unitMap: Record<string, string> = {
-  kg: "কেজি",
-  piece: "পিস",
-  hali: "হালি",
-  dozen: "ডজন",
-  liter: "লিটার",
-  bundle: "আঁটি"
-};
-
-async function getProduct(id: string): Promise<Product | null> {
-  const res = await fetch(apiUrls.products);
-  if (!res.ok) return null;
-  const products: Product[] = await res.json();
-  return products.find(p => p.id.toString() === id || p.slug === id) || null;
-}
-
-import { redirect } from "next/navigation";
 import { connection } from "next/server";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import MarketDataNotice from "@/components/MarketDataNotice";
+import { getAuthSession } from "@/lib/auth-session";
+import { getProducts, unitLabels } from "@/lib/market-data";
 
 export const instant = false;
 
 export default async function ProductDetailsPage({ params }: { params: { id: string } }) {
-  // Check auth
   await connection();
-  const session = await auth.api.getSession({
-    headers: await headers()
-  });
-
+  const session = await getAuthSession();
   if (!session) {
     redirect("/signin");
   }
 
-  // Need to await params in newer Next.js versions
   const { id } = await params;
-  const product = await getProduct(id);
-
+  const productData = await getProducts();
+  if (productData.error) {
+    return (
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        <MarketDataNotice />
+      </div>
+    );
+  }
+  const product = productData.items.find(
+    (item) => item.id.toString() === id || item.slug === id
+  );
   if (!product) {
     notFound();
   }
 
-  // Formatting variables
-  const unitBn = unitMap[product.unit] || product.unit;
+  const unitBn = unitLabels[product.unit] || product.unit;
   const priceDiff = Math.abs(product.today - product.yesterday);
   const diffText = product.change.dir === 'up' ? 'বেড়েছে' : product.change.dir === 'down' ? 'কমেছে' : 'অপরিবর্তিত আছে';
   
@@ -124,7 +81,7 @@ export default async function ProductDetailsPage({ params }: { params: { id: str
               </p>
             </div>
           </div>
-          <div className="bg-gray-50 rounded-xl p-5 text-center min-w-[160px] w-full md:w-auto">
+          <div className="bg-gray-50 rounded-xl p-5 text-center min-w-40 w-full md:w-auto">
             <p className="text-gray-500 text-sm mb-1">আজকের দাম</p>
             <p className="text-4xl font-bold text-gray-900 mb-1">{product.today}</p>
             <p className="text-gray-500 text-sm mb-2">টাকা / {unitBn}</p>

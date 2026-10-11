@@ -1,56 +1,34 @@
 import { notFound } from "next/navigation";
-import { apiUrls } from "@/lib/api";
+import { connection } from "next/server";
+import MarketDataNotice from "@/components/MarketDataNotice";
 import CategoryClient from "./CategoryClient";
-
-interface Category {
-  id: number;
-  slug: string;
-  nameBn: string;
-  icon: string;
-}
-
-interface Product {
-  id: number;
-  slug: string;
-  nameBn: string;
-  category: string;
-  categoryNameBn: string;
-  categoryIcon: string;
-  unit: string;
-  image: string;
-  today: number;
-  change: {
-    dir: string;
-    pct: number;
-  };
-}
-
-async function getCategory(slug: string): Promise<Category | null> {
-  const res = await fetch(apiUrls.categories);
-  if (!res.ok) return null;
-  const categories: Category[] = await res.json();
-  return categories.find(c => c.slug === slug) || null;
-}
-
-async function getProductsByCategory(slug: string): Promise<Product[]> {
-  const res = await fetch(apiUrls.products);
-  if (!res.ok) return [];
-  const products: Product[] = await res.json();
-  return products.filter(p => p.category === slug);
-}
+import { getCategories, getProducts } from "@/lib/market-data";
 
 export const instant = false;
 
 export default async function CategoryPage({ params }: { params: { slug: string } }) {
   const { slug } = await params;
-  
-  const category = await getCategory(slug);
-  
+  await connection();
+
+  const [categoryData, productData] = await Promise.all([
+    getCategories(),
+    getProducts(),
+  ]);
+
+  if (categoryData.error || productData.error) {
+    return (
+      <div className="container mx-auto max-w-5xl px-4 py-8">
+        <MarketDataNotice />
+      </div>
+    );
+  }
+
+  const category = categoryData.items.find((item) => item.slug === slug);
   if (!category) {
     notFound();
   }
 
-  const products = await getProductsByCategory(slug);
+  const products = productData.items.filter((product) => product.category === slug);
 
   return <CategoryClient initialProducts={products} category={category} />;
 }

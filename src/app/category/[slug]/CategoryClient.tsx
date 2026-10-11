@@ -2,30 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-
-// Using the same interfaces or simplified versions
-interface Product {
-  id: number;
-  slug: string;
-  nameBn: string;
-  category: string;
-  categoryNameBn: string;
-  categoryIcon: string;
-  unit: string;
-  image: string;
-  today: number;
-  change: {
-    dir: string;
-    pct: number;
-  };
-}
-
-interface Category {
-  id: number;
-  slug: string;
-  nameBn: string;
-  icon: string;
-}
+import type { Category, Product } from "@/lib/market-data";
 
 const unitMap: Record<string, string> = {
   kg: "কেজি",
