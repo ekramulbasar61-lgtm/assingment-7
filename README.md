@@ -28,7 +28,11 @@
    ```bash
    npm install
    ```
-3. Set up the environment variables (e.g., `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL=http://localhost:3000`).
+3. Configure the API base URL in `.env` (or copy `.env.example`):
+   ```env
+   API_BASE_URL=https://openapi.programming-hero.com/api/bazardor
+   ```
+   Set `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL=http://localhost:3000` there as needed.
 4. Run the database migration for BetterAuth:
    ```bash
    npx @better-auth/cli migrate
