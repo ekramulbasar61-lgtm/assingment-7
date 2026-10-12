@@ -111,7 +111,7 @@ export default function SignUpPage() {
                 placeholder="পাসওয়ার্ড লিখুন" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
+                autoComplete="new- password"
                 className="input input-bordered w-full focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 bg-white" 
                 required 
                 minLength={8}
