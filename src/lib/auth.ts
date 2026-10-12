@@ -1,5 +1,4 @@
 import { betterAuth } from "better-auth";
-import Database from "better-sqlite3";
 import { Kysely, PostgresDialect } from "kysely";
 import { Pool } from "pg";
 
@@ -22,6 +21,46 @@ const authBaseUrl =
   (process.env.VERCEL_URL
     ? `https://${process.env.VERCEL_URL}`
     : "http://localhost:3000");
+const trustedOrigins = new Set([new URL(authBaseUrl).origin]);
+
+if (process.env.VERCEL_URL) {
+  trustedOrigins.add(new URL(`https://${process.env.VERCEL_URL}`).origin);
+}
+
+function redactSensitiveValues(value: string): string {
+  let safeValue = value;
+  for (const secretValue of [
+    databaseUrl,
+    secret,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GITHUB_CLIENT_SECRET,
+  ]) {
+    if (secretValue) safeValue = safeValue.replaceAll(secretValue, "[REDACTED]");
+  }
+
+  return safeValue
+    .replace(/(postgres(?:ql)?:\/\/)[^\s@]+@/gi, "$1[REDACTED]@")
+    .replace(
+      /((?:password|secret|token|authorization|cookie)\s*[=:]\s*)(?:"[^"]*"|'[^']*'|[^\s,;]+)/gi,
+      "$1[REDACTED]"
+    )
+    .slice(0, 2000);
+}
+
+function summarizeAuthError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return { type: typeof error };
+  }
+
+  const code =
+    "code" in error && typeof error.code === "string" ? error.code : undefined;
+
+  return {
+    name: error.name,
+    ...(code ? { code } : {}),
+    message: redactSensitiveValues(error.message),
+  };
+}
 
 const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
@@ -51,12 +90,34 @@ const database = databaseUrl
       }),
       type: "postgres" as const,
     }
-  : new Database("sqlite.db");
+  : await (async () => {
+      const { default: Database } = await import("better-sqlite3");
+      return new Database("sqlite.db");
+    })();
 
 export const auth = betterAuth({
   secret,
   baseURL: authBaseUrl,
+  trustedOrigins: [...trustedOrigins],
   database,
+  logger: {
+    level: "error",
+    log: (_level, message, ...args) => {
+      const errorSummaries = args
+        .filter((arg): arg is Error => arg instanceof Error)
+        .map(summarizeAuthError);
+      console.error(
+        "[better-auth]",
+        redactSensitiveValues(message),
+        ...errorSummaries
+      );
+    },
+  },
+  onAPIError: {
+    onError: (error) => {
+      console.error("[better-auth] API request failed", summarizeAuthError(error));
+    },
+  },
   emailAndPassword: {
     enabled: true,
     autoSignIn: true,
